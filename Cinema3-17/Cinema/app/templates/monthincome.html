@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+{% block content %}
+<script src="https://cdn.bootcss.com/echarts/4.6.0/echarts.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/moment/moment.min.js"></script>
+<link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/pikaday/css/pikaday.css">
+<script src="https://cdn.jsdelivr.net/npm/pikaday/pikaday.js"></script>
+<div>
+    Select week：
+    <input type="text" id="datepicker">
+    Start Date：<span id="startdate"></span>
+    End Date：<span id="enddate"></span>
+</div>
+<div id="chart_box" style="width: 100%;height:500px;margin:0 auto;"></div>
+
+<script src="{{ url_for('static', filename='js/bsyd.js') }}"></script>
+
+<script>
+
+var myChart1 = echarts.init(document.getElementById('chart_box'));
+
+
+function mychart1(time, table_rows) {
+    var films = table_rows.map(function(item) {
+        return item.FilmName
+    });
+    var values = table_rows.map(function(item) {
+        return item.Sum
+    });
+    //配置及数据
+    optionyear = {
+        title: {
+            text: "Weekly takings",
+            padding: [10, 100, 10, 500], // 标题位置
+            subtext: "",
+            textAlign: "center",
+        },
+        tooltip: {
+            formatter: '{c}',
+            trigger: 'axis',    //提示触发类型      'item':数据项图形触发，主要在散点图，饼图等无类目轴的图表中使用。
+            //'axis':坐标轴触发，主要在柱状图，折线图等会使用类目轴的图表中使用。
+            //'none':什么都不触发。
+            show: true,     //是否显示提示框组件 默认为true
+            axisPointer: {
+                type: 'cross',
+                crossStyle: {
+                    color: '#999'
+                }
+            }
+        },
+        legend: {
+            data: ['']
+        },
+        xAxis: [
+            {
+                type: 'category',
+                data: films,
+                axisPointer: {
+                    type: 'shadow'
+                }
+            }
+        ],
+        yAxis: [
+            {
+                type: 'value',
+                name: '',
+                //min: 0,
+                //max: 120.00,
+                //splitNumber: 10,
+                axisLabel: {
+                    formatter: '{value}',
+                }
+            },
+        ],
+        series: [
+            {
+                name: '',
+                type: 'bar',         //bar表示柱状图
+                barWidth: 20,
+                data: values,//数据
+                itemStyle: {    //更多柱状图样式搜索API：series-bar.itemStyle
+                    normal: {
+                        color: '#1E90FF',//改变柱状的颜色
+                        label: {
+                            show: true, //开启显示
+                            position: 'top', //在上方显示
+                            formatter: '{c}',   //百分比显示
+                            textStyle: { //数值样式
+                                color: 'black',    //柱上数据颜色
+                                fontSize: 16
+                            }
+                        }
+                    }
+                },
+            },
+        ]
+    };
+    // 使用刚指定的配置项和数据显示图表。
+    myChart1.setOption(optionyear);
+}
+
+    $(function () {//使用on进行事件绑定事件。
+        mychart1('year1', []);
+
+        $("select").on('click', function () {
+            if ($("select").val() == 1) {
+                mychart1('year1');
+            }
+            else if ($("select").val() == 2) {
+                // mychart1.clear();
+                mychart1('year2');
+            }
+        });
+        $("#time_sec").on('click', function () {
+            //alert('请求时间段的数据');
+
+            myChart1.clear();            //清空原来的图表
+            mychart1('time_sec');   //重新加载图表，之前必须要清空原来的，否则没有动画效果
+        });
+    });
+</script>
+
+<script>
+    var picker = new Pikaday({
+        field: document.getElementById('datepicker'),
+        showWeekNumber: true,
+        pickWholeWeek: true,
+        defaultDate:  new Date(),
+        firstDay: 1,
+        format: 'YYYY年第W周',
+        onSelect: function () {
+            var startdate = picker.getMoment().startOf('isoweek').format('YYYY-MM-DD')
+            $.post('/monthincome/', {
+                startdate: startdate
+            }).then(function(data) {
+                $('#startdate').html(data.startdate)
+                $('#enddate').html(data.enddate)
+                mychart1('year1', data.rows);
+            })
+        }
+    });
+    picker.setDate(new Date())
+</script>
+
+{% endblock %}

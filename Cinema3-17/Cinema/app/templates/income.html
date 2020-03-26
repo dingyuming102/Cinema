@@ -1,0 +1,275 @@
+{% extends "base.html" %}
+{% block content %}
+<link href="https://cdn.bootcss.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.bootcss.com/bootstrap-datetimepicker/4.17.47/css/bootstrap-datetimepicker.min.css"
+    rel="stylesheet">
+<script src="https://cdn.bootcss.com/echarts/4.6.0/echarts.min.js"></script>
+<script src="https://cdn.bootcss.com/jquery/3.3.1/jquery.js"></script>
+<script src="https://cdn.bootcss.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+<script src="https://cdn.bootcss.com/moment.js/2.22.0/moment-with-locales.js"></script>
+<script src="https://cdn.bootcss.com/bootstrap-datetimepicker/4.17.47/js/bootstrap-datetimepicker.min.js"></script>
+<link href="https://cdn.bootcss.com/bootstrap-multiselect/0.9.15/css/bootstrap-multiselect.css" rel="stylesheet">
+<script src="https://cdn.bootcss.com/bootstrap-multiselect/0.9.15/js/bootstrap-multiselect.js"></script>
+<form id="myForm">
+    <div class="row">
+        <div class='col-sm-3'>
+            <div class="form-group">
+                <label>Select the first day：</label>
+                <!--指定 date标记-->
+                <div class='input-group date' id='datetimepicker1'>
+                    <input type='text' class="form-control" name="begin" />
+                    <span class="input-group-addon">
+                        <span class="glyphicon glyphicon-calendar"></span>
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <div class='col-sm-3'>
+            <div class="form-group">
+                <label>Select the last day：</label>
+                <!--指定 date标记-->
+                <div class='input-group date' id='datetimepicker2'>
+                    <input type='text' class="form-control" name="end" />
+                    <span class="input-group-addon"><span class="glyphicon glyphicon-calendar"></span></span>
+                </div>
+            </div>
+        </div>
+
+        <div class='col-sm-2'>
+            <div class="form-group">
+                <label for="">Select movies：</label>
+                <select class="multiselect" multiple="multiple" name="movie[]">
+                    {% for movie in movies %}
+                        <option value="{{movie['FilmID']}}" >{{movie['FilmName']}}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+
+        <div class='col-sm-2'>
+            <div class="form-group">
+                <label for="">Search button</label>
+                <button id="chaxun" class="btn btn-default">Search</button>
+            </div>
+        </div>
+    </div>
+</form>
+
+<div class="row">
+    <div id="main" style="width: 900px;height: 600px;"></div>
+</div>
+{#<script type="text/javascript">#}
+    {#        function login() {# }
+        {#            $.ajax({            //几个参数需要注意一下#}
+{ # type: "POST",//方法类型#}
+{ # dataType: "json",//预期服务器返回的数据类型#}
+{ # url: "/income/" ,//url#}
+{ # data: $('#myForm').serialize(), # }
+{ # success: function(result) {# }
+{ #                console.log(result);//打印服务端返回的数据(调试用)#}
+{ # if(result.resultCode == 200) {# }
+            {#                        alert("SUCCESS");# }
+            {# }#
+        }
+        {#;# }
+        {# },#
+    }
+    {#                error: function() {# }
+        {#                    alert("异常！");# }
+        {# }#
+    }
+    {# });#}
+    {# }    </script>#}
+
+<script>
+    $(function () {
+        var endDate = moment()
+        var startDate = moment().subtract(6, 'days')
+        var picker1 = $('#datetimepicker1').datetimepicker({
+            format: 'YYYY-MM-DD',
+            locale: moment.locale('zh-cn'),
+            //minDate: '2016-7-1',
+            defaultDate: startDate
+        });
+        var picker2 = $('#datetimepicker2').datetimepicker({
+            format: 'YYYY-MM-DD',
+            locale: moment.locale('zh-cn'),
+            defaultDate: endDate
+        });
+        //动态设置最小值
+        picker1.on('dp.change', function (e) {
+            picker2.data('DateTimePicker').minDate(e.date);
+        });
+        //动态设置最大值
+        picker2.on('dp.change', function (e) {
+            picker1.data('DateTimePicker').maxDate(e.date);
+        });
+    });
+</script>
+<script type="text/javascript">
+
+    var myChart = echarts.init(document.getElementById('main'));
+
+    var app = {
+        xday: [],
+        yvalue: []
+    };
+
+    var table_data = []
+
+    function refreshChart(data) {
+        // app.xday = data.xdays;
+        // app.yvalue = data.yvalues;
+        datelist = data.datelist
+        movies = data.movies
+
+        serieslist = []
+
+        // var labelOption = {
+        //     show: true,
+        //     position: app.config.position,
+        //     distance: app.config.distance,
+        //     align: app.config.align,
+        //     verticalAlign: app.config.verticalAlign,
+        //     rotate: app.config.rotate,
+        //     formatter: '{c}  {name|{a}}',
+        //     fontSize: 16,
+        //     rich: {
+        //         name: {
+        //             textBorderColor: '#fff'
+        //         }
+        //     }
+        // };
+
+        legend = []
+
+
+        for(var i = 0; i < movies.length; i++) {
+            var movie = movies[i]
+            legend.push(movie.FilmName)
+            serieslist.push({
+                name: movie.FilmName,
+                type: 'bar',
+                // label: labelOption,
+                data: movie.data
+            })
+        }
+
+        myChart.setOption({
+            title: {
+            },
+            tooltip: {},
+            legend: {
+                data: legend
+            },
+            xAxis: {
+                data: datelist
+            },
+            yAxis: {},
+            series: serieslist
+        }, true)
+
+    }
+
+    function refreshSelect(selectList) {
+        // $(".multiselect").html("");
+        // for (var i = 0; i < selectList.length; i++) {
+        //     var item = selectList[i]
+        //     $(".multiselect").append("<option value='" + item.FilmID + "'>" + item.FilmName + "</option>");
+        // }
+        $(".multiselect").multiselect("destroy").multiselect({
+            nonSelectedText: '--Please select--',
+            allSelectedText: 'All',
+            maxHeight: 250,
+            includeSelectAllOption: true,
+            numberDisplayed: 5,
+            // onChange: function (option, checked, select) {
+            //     var selectedIds = [];
+            //     $('.multiselect option').each(function () {
+            //         if (this.selected) {
+            //             selectedIds.push(parseInt(this.value))
+            //         }
+            //     });
+            //     refreshChart(selectedIds)
+            // },
+            // onSelectAll: function() {
+            //     var selectedIds = table_data.map(function (item) {
+            //         return item.FilmID
+            //     })
+            //     refreshChart(selectedIds)
+            // },
+            // onDeselectAll: function() {
+            //     refreshChart([])
+            // }
+        }).multiselect('selectAll', false).multiselect('refresh')
+    }
+
+    refreshSelect([])
+
+
+    // 发送ajax请求，从后台获取json数据
+    $(document).ready(function () {
+        getData();
+    });
+
+    $('#chaxun').click(function(event) {
+        event.preventDefault()
+        getData()
+    })
+
+    function getData() {
+        var begin = $('#datetimepicker1').datetimepicker('date').format('YYYY-MM-DD')
+        var end = $('#datetimepicker2').datetimepicker('date').format('YYYY-MM-DD')
+        var selectedIds = [];
+        $('.multiselect option').each(function () {
+            if (this.selected) {
+                selectedIds.push(parseInt(this.value))
+            }
+        });
+        $.ajax({
+            url: '/income/',
+            data: {
+                begin: begin,
+                end: end,
+                selectedIds: selectedIds
+            },
+            type: 'POST',
+            async: false,
+            dataType: 'json',
+            success: function (data) {
+                refreshChart(data)
+            },
+            error: function (msg) {
+                console.log(msg);
+                alert('系统发生错误');
+            }
+        })
+    };
+
+    /*
+        var option={
+            title: {
+                text: '异步数据加载示例'
+            },
+            tooltip: {},
+            legend: {
+                data:['销量']
+            },
+            xAxis: {
+                data: app.xday
+            },
+            yAxis: {},
+            series: [{
+                name: '销量',
+                type: 'bar',
+                data: app.yvalue
+            }]
+        };
+
+        myChart.setOption(option);
+    */
+
+</script>
+
+{% endblock %}
